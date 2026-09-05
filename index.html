@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WA RAK - Daily Meter Readings</title>
+    <style>
+        :root{
+            --navy:#102a43;
+            --blue:#1769aa;
+            --blue2:#2f80ed;
+            --cyan:#00a8cc;
+            --ink:#14213d;
+            --muted:#6b7c93;
+            --bg:#eef4f8;
+            --card:#ffffff;
+            --line:#dfe8ef;
+            --success:#16a085;
+            --danger:#e74c3c;
+            --shadow:0 18px 50px rgba(16,42,67,.12);
+            --radius:22px;
+        }
+
+        *{margin:0;padding:0;box-sizing:border-box}
+
+        html{scroll-behavior:smooth}
+
+        body{
+            font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+            color:var(--ink);
+            background:
+                radial-gradient(circle at 15% 10%, rgba(47,128,237,.20), transparent 28%),
+                radial-gradient(circle at 90% 15%, rgba(0,168,204,.16), transparent 26%),
+                linear-gradient(160deg,#f7fbff 0%,#edf4f8 48%,#e8f0f5 100%);
+            min-height:100vh;
+            padding:14px;
+        }
+
+        body::before{
+            content:"";
+            position:fixed;
+            inset:0;
+            pointer-events:none;
+            background-image:linear-gradient(rgba(255,255,255,.22) 1px,transparent 1px),
+                             linear-gradient(90deg,rgba(255,255,255,.22) 1px,transparent 1px);
+            background-size:32px 32px;
+            opacity:.35;
+        }
+
+        .container{
+            width:min(1080px,100%);
+            margin:0 auto;
+            background:rgba(255,255,255,.88);
+            border:1px solid rgba(255,255,255,.9);
+            border-radius:28px;
+            box-shadow:var(--shadow);
+            overflow:hidden;
+            position:relative;
+            backdrop-filter:blur(14px);
+        }
+
+        .header{
+            position:relative;
+            color:white;
+            padding:28px 24px 26px;
+            text-align:center;
+            overflow:hidden;
+            background:
+                radial-gradient(circle at 10% 20%,rgba(255,255,255,.18),transparent 25%),
+                radial-gradient(circle at 90% 0%,rgba(0,210,255,.25),transparent 30%),
+                linear-gradient(135deg,#0d2b4d 0%,#145b92 52%,#087f9f 100%);
+        }
+
+        .header::after{
+            content:"";
+            position:absolute;
+            width:180px;height:180px;
+            right:-70px;bottom:-100px;
+            border:35px solid rgba(255,255,255,.08);
+            border-radius:50%;
+        }
+
+        .brand{
+            position:relative;
+            z-index:1;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            width:58px;height:58px;
+            border-radius:18px;
+            background:rgba(255,255,255,.14);
+            border:1px solid rgba(255,255,255,.22);
+            box-shadow:0 12px 28px rgba(0,0,0,.14);
+            font-size:28px;
+            margin-bottom:12px;
+        }
+
+        .header h1{
+            position:relative;
+            z-index:1;
+            font-size:clamp(22px,4vw,31px);
+            line-height:1.15;
+            letter-spacing:-.5px;
+            margin-bottom:8px;
+            font-weight:800;
+        }
+
+        .header p{
+            position:relative;
+            z-index:1;
+            font-size:14px;
+            opacity:.88;
+            font-weight:500;
+        }
+
+        .content{padding:22px}
+
+        .utility-grid{
+            display:grid;
+            grid-template-columns:repeat(3,1fr);
+            gap:13px;
+            margin-bottom:22px;
+        }
+
+        .utility-card{
+            appearance:none;
+            border:1px solid var(--line);
+            background:linear-gradient(145deg,#fff,#f7fbfd);
+            color:var(--ink);
+            border-radius:18px;
+            min-height:94px;
+            padding:15px;
+            text-align:left;
+            cursor:pointer;
+            display:flex;
+            align-items:center;
+            gap:13px;
+            box-shadow:0 7px 20px rgba(16,42,67,.06);
+            transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease,background .22s ease;
+            -webkit-tap-highlight-color:transparent;
+        }
+
+        .utility-card:hover{
+            transform:translateY(-3px);
+            box-shadow:0 14px 30px rgba(16,42,67,.12);
+            border-color:#b9d4e6;
+        }
+
+        .utility-card.active{
+            background:linear-gradient(145deg,#0f4775,#197da3);
+            color:#fff;
+            border-color:transparent;
+            box-shadow:0 14px 32px rgba(20,91,146,.28);
+        }
+
+        .utility-icon{
+            width:48px;height:48px;
+            flex:0 0 48px;
+            display:grid;
+            place-items:center;
+            border-radius:15px;
+            background:#eaf4fa;
+            font-size:24px;
+        }
+
+        .utility-card.active .utility-icon{background:rgba(255,255,255,.15)}
+
+        .utility-info{min-width:0;flex:1}
+        .utility-title{font-size:14px;font-weight:800;letter-spacing:.1px}
+        .utility-subtitle{font-size:11px;color:var(--muted);margin-top:4px}
+        .utility-card.active .utility-subtitle{color:rgba(255,255,255,.78)}
+        .utility-arrow{font-size:18px;opacity:.55}
+
+        .tab-content{display:none;animation:slideIn .25s ease}
+        .tab-content.active{display:block}
+
+        @keyframes slideIn{
+            from{opacity:0;transform:translateY(7px)}
+            to{opacity:1;transform:translateY(0)}
+        }
+
+        .section-head{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            margin-bottom:14px;
+        }
+
+        .section-kicker{
+            font-size:11px;
+            text-transform:uppercase;
+            letter-spacing:1.2px;
+            color:var(--blue);
+            font-weight:800;
+            margin-bottom:4px;
+        }
+
+        .meter-section{
+            background:rgba(248,251,253,.9);
+            border:1px solid var(--line);
+            border-radius:20px;
+            padding:18px;
+            margin-bottom:14px;
+            box-shadow:0 8px 24px rgba(16,42,67,.045);
+        }
+
+        .meter-section h3{
+            color:var(--navy);
+            font-size:17px;
+            font-weight:800;
+        }
+
+        .meter-grid{
+            display:grid;
+            grid-template-columns:repeat(2,minmax(0,1fr));
+            gap:12px;
+        }
+
+        .meter-card{
+            background:#fff;
+            border:1px solid var(--line);
+            border-radius:16px;
+            padding:14px;
+            box-shadow:0 4px 13px rgba(16,42,67,.04);
+        }
+
+        .meter-card label{
+            display:block;
+            font-size:12px;
+            line-height:1.35;
+            color:#40566c;
+            margin-bottom:8px;
+            font-weight:800;
+        }
+
+        .meter-card small{
+            display:block;
+            margin:-3px 0 9px !important;
+            color:#8495a5 !important;
+            font-size:10px;
+            line-height:1.35;
+        }
+
+        .meter-card input{
+            width:100%;
+            min-height:48px;
+            padding:11px 13px;
+            border:1.5px solid #d7e1e8;
+            background:#fbfdfe;
+            color:var(--ink);
+            border-radius:12px;
+            font-size:16px;
+            font-weight:600;
+            outline:none;
+            transition:border-color .18s,box-shadow .18s,background .18s;
+        }
+
+        .meter-card input::placeholder{color:#a4b0ba;font-weight:500}
+        .meter-card input:focus{
+            background:#fff;
+            border-color:var(--blue2);
+            box-shadow:0 0 0 4px rgba(47,128,237,.11);
+        }
+
+        .save-area{
+            margin-top:18px;
+            padding:18px;
+            border-radius:20px;
+            background:linear-gradient(135deg,#f4fbff,#edf7f9);
+            border:1px solid #d5e9ef;
+            text-align:center;
+        }
+
+        .btn-success{
+            width:min(100%,430px);
+            min-height:56px;
+            margin:0 auto;
+            border:0;
+            border-radius:16px;
+            background:linear-gradient(135deg,#0f8a78,#16a085);
+            color:#fff;
+            cursor:pointer;
+            font-size:16px;
+            font-weight:800;
+            letter-spacing:.2px;
+            box-shadow:0 12px 25px rgba(22,160,133,.24);
+            transition:transform .2s,box-shadow .2s,opacity .2s;
+        }
+
+        .btn-success:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(22,160,133,.28)}
+        .btn-success:disabled{opacity:.7;cursor:wait;transform:none}
+
+        .note{
+            margin:11px auto 0;
+            max-width:680px;
+            color:#667b8e;
+            font-size:11px;
+            line-height:1.5;
+        }
+
+        .feedback{
+            position:fixed;
+            z-index:9999;
+            inset:0;
+            display:none;
+            align-items:center;
+            justify-content:center;
+            padding:20px;
+            background:rgba(8,27,44,.38);
+            backdrop-filter:blur(5px);
+        }
+
+        .feedback.show{display:flex}
+
+        .feedback-box{
+            width:min(360px,calc(100vw - 36px));
+            padding:28px 22px 24px;
+            border-radius:24px;
+            background:#fff;
+            text-align:center;
+            box-shadow:0 25px 70px rgba(0,0,0,.25);
+            animation:pop .25s ease;
+        }
+
+        @keyframes pop{
+            from{opacity:0;transform:scale(.88) translateY(8px)}
+            to{opacity:1;transform:scale(1) translateY(0)}
+        }
+
+        .feedback-icon{
+            width:62px;height:62px;
+            margin:0 auto 13px;
+            display:grid;
+            place-items:center;
+            border-radius:50%;
+            font-size:29px;
+        }
+
+        .success-box .feedback-icon{background:#e5f8f3;color:var(--success)}
+        .error-box .feedback-icon{background:#fff0ee;color:var(--danger)}
+
+        .feedback-title{font-size:19px;font-weight:850;color:var(--ink)}
+        .feedback-text{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.45}
+
+        .feedback-close{
+            margin-top:17px;
+            min-width:110px;
+            min-height:42px;
+            padding:9px 16px;
+            border:0;
+            border-radius:11px;
+            background:#edf3f7;
+            color:#355066;
+            font-weight:800;
+            cursor:pointer;
+        }
+
+        @media (max-width:760px){
+            body{padding:0;background:#eef4f8}
+            .container{border-radius:0;min-height:100vh;border:0}
+            .header{border-radius:0;padding:24px 18px 22px}
+            .content{padding:15px}
+            .utility-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+            .utility-card{min-height:86px;padding:12px;gap:10px;border-radius:16px}
+            .utility-icon{width:42px;height:42px;flex-basis:42px;border-radius:13px;font-size:21px}
+            .utility-title{font-size:12px}
+            .utility-subtitle{font-size:10px}
+            .utility-arrow{font-size:15px}
+            .meter-grid{grid-template-columns:1fr}
+            .meter-section{padding:14px;border-radius:18px}
+            .save-area{padding:15px}
+        }
+
+        @media (max-width:430px){
+            .utility-grid{grid-template-columns:1fr}
+            .utility-card{min-height:72px}
+            .utility-icon{width:40px;height:40px;flex-basis:40px}
+            .header h1{font-size:22px}
+            .header p{font-size:12px}
+        }
+
+        @media (min-width:900px){
+            .utility-grid{grid-template-columns:repeat(5,1fr)}
+            .utility-card{display:block;text-align:center;padding:15px 9px}
+            .utility-icon{margin:0 auto 9px}
+            .utility-arrow{display:none}
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="brand">🏢</div>
+            <h1>WA RAK</h1>
+            <p>Daily Meter Readings</p>
+            <p id="current-date" style="font-size:12px;margin-top:8px;opacity:.9;font-weight:600;"></p>
+        </div>
+        
+        <div class="content">
+            <div class="utility-grid" role="navigation" aria-label="Utilities">
+                <button class="utility-card active" data-tab="electrical" onclick="switchTab('electrical', this)">
+                    <span class="utility-icon">⚡</span>
+                    <span class="utility-info"><span class="utility-title">Electrical</span><span class="utility-subtitle">Power meters</span></span>
+                    <span class="utility-arrow">›</span>
+                </button>
+                <button class="utility-card" data-tab="water" onclick="switchTab('water', this)">
+                    <span class="utility-icon">💧</span>
+                    <span class="utility-info"><span class="utility-title">Water & Pools</span><span class="utility-subtitle">Water, pools & occupancy</span></span>
+                    <span class="utility-arrow">›</span>
+                </button>
+                <button class="utility-card" data-tab="cooling" onclick="switchTab('cooling', this)">
+                    <span class="utility-icon">❄️</span>
+                    <span class="utility-info"><span class="utility-title">Cooling</span><span class="utility-subtitle">Cooling tower</span></span>
+                    <span class="utility-arrow">›</span>
+                </button>
+                <button class="utility-card" data-tab="irrigation" onclick="switchTab('irrigation', this)">
+                    <span class="utility-icon">🌱</span>
+                    <span class="utility-info"><span class="utility-title">Irrigation</span><span class="utility-subtitle">Landscape water</span></span>
+                    <span class="utility-arrow">›</span>
+                </button>
+                <button class="utility-card" data-tab="lpg" onclick="switchTab('lpg', this)">
+                    <span class="utility-icon">🔥</span>
+                    <span class="utility-info"><span class="utility-title">LPG</span><span class="utility-subtitle">Fuel readings</span></span>
+                    <span class="utility-arrow">›</span>
+                </button>
+            </div>
+
+            <!-- Electrical Meters Tab -->
+            <div id="electrical-tab" class="tab-content active">
+                <div class="meter-section">
+                    <div class="section-head">
+                        <div>
+                            <div class="section-kicker">Electrical</div>
+                            <h3>⚡ Electrical Meters</h3>
+                        </div>
+                    </div>
+                    <div class="meter-grid">
+                        <div class="meter-card">
+                            <label>MAIN INCOMER</label>
+                            <small>MV Room</small>
+                            <input type="number" id="main-incomer" placeholder="Enter reading" step="0.01" inputmode="decimal">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>FEWA MAIN METER</label>
+                            <small>MV Room</small>
+                            <input type="number" id="fewa-main" placeholder="Enter reading" step="0.01" inputmode="decimal">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="meter-section">
+                    <div class="section-head">
+                        <div>
+                            <div class="section-kicker">Sub Meters</div>
+                            <h3>🏢 AL HAMRA METERS</h3>
+                        </div>
+                    </div>
+                    <div class="meter-grid" id="al-hamra-meters"></div>
+                </div>
+            </div>
+
+            <!-- Water & Pools Tab -->
+            <div id="water-tab" class="tab-content">
+                <div class="meter-section">
+                    <div class="section-head">
+                        <div>
+                            <div class="section-kicker">Water</div>
+                            <h3>💧 Water Meters</h3>
+                        </div>
+                    </div>
+                    <div class="meter-grid">
+                        <div class="meter-card">
+                            <label>MAIN UTICO WATER METER</label>
+                            <small>Main Meter</small>
+                            <input type="number" id="utico-water" placeholder="Enter reading" step="0.01" inputmode="decimal">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>DAILY OCCUPANCY ACTUAL %</label>
+                            <small>Actual Percentage</small>
+                            <input type="number" id="occupancy-actual" placeholder="Enter %" step="0.01" inputmode="decimal">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="meter-section">
+                    <div class="section-head">
+                        <div>
+                            <div class="section-kicker">Pools</div>
+                            <h3>🏊 Pools Make Up Water</h3>
+                        </div>
+                    </div>
+                    <div class="meter-grid">
+                        <div class="meter-card">
+                            <label>MAIN POOL</label>
+                            <small>Main Pool</small>
+                            <input type="number" id="main-pool" placeholder="Enter reading" step="0.01" inputmode="decimal">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>SPLASH POOL</label>
+                            <small>Splash Pool</small>
+                            <input type="number" id="splash-pool" placeholder="Enter reading" step="0.01" inputmode="decimal">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>SUNSET POOL</label>
+                            <small>Sunset Pool</small>
+                            <input type="number" id="sunset-pool" placeholder="Enter reading" step="0.01" inputmode="decimal">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cooling Tower Tab -->
+            <div id="cooling-tab" class="tab-content">
+                <div class="meter-section">
+                    <div class="section-head">
+                        <div>
+                            <div class="section-kicker">Cooling Tower</div>
+                            <h3>❄️ Cooling Tower Meters</h3>
+                        </div>
+                    </div>
+                    <div class="meter-grid">
+                        <div class="meter-card">
+                            <label>COOLING TOWER WATER METER</label>
+                            <small>Cooling Tower</small>
+                            <input type="number" id="cooling-tower" placeholder="Enter reading" step="0.01" inputmode="decimal">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>CHILLER SET POINT</label>
+                            <small>Temperature °C</small>
+                            <input type="text" id="chiller-setpoint-cooling" placeholder="e.g., 9°D&9°N">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>BOND CONSTRUCTION</label>
+                            <small>Water Meter</small>
+                            <input type="number" id="bond-construction" placeholder="Enter reading" step="0.01" inputmode="decimal">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Irrigation Tab -->
+            <div id="irrigation-tab" class="tab-content">
+                <div class="meter-section">
+                    <div class="section-head">
+                        <div>
+                            <div class="section-kicker">Irrigation</div>
+                            <h3>🌱 Irrigation Meters</h3>
+                        </div>
+                    </div>
+                    <div class="meter-grid">
+                        <div class="meter-card">
+                            <label>MAIN IRRIGATION METER</label>
+                            <small>Main Meter</small>
+                            <input type="number" id="main-irrigation" placeholder="Enter reading" step="0.01" inputmode="decimal">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>BOARDWALK IRRIGATION</label>
+                            <small>Boardwalk</small>
+                            <input type="number" id="boardwalk-irrigation" placeholder="Enter reading" step="0.01" inputmode="decimal">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>AL HAMRA RESIDENCE</label>
+                            <small>Residence</small>
+                            <input type="number" id="residence" placeholder="Enter reading" step="0.01" inputmode="decimal">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LPG Tab -->
+            <div id="lpg-tab" class="tab-content">
+                <div class="meter-section">
+                    <div class="section-head">
+                        <div>
+                            <div class="section-kicker">LPG</div>
+                            <h3>🔥 LPG Meters</h3>
+                        </div>
+                    </div>
+                    <div class="meter-grid">
+                        <div class="meter-card">
+                            <label>BOILER (M3)</label>
+                            <small>Boiler Meter</small>
+                            <input type="number" id="boiler" placeholder="Enter reading" step="0.01" inputmode="decimal">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>KITCHEN (M3)</label>
+                            <small>Kitchen Meter</small>
+                            <input type="number" id="kitchen" placeholder="Enter reading" step="0.01" inputmode="decimal">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>TANK 1 GAUGE %</label>
+                            <small>Tank 1</small>
+                            <input type="number" id="tank1-gauge" placeholder="Enter %" step="0.1" inputmode="decimal">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>TANK 2 GAUGE %</label>
+                            <small>Tank 2</small>
+                            <input type="number" id="tank2-gauge" placeholder="Enter %" step="0.1" inputmode="decimal">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>DELIVERY RECEIVED (Liters)</label>
+                            <small>Liters</small>
+                            <input type="number" id="delivery-received" placeholder="Enter liters" step="0.01" inputmode="decimal">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>CLARIFIER SET POINT (°C)</label>
+                            <small>Temperature</small>
+                            <input type="number" id="clarifier-setpoint" placeholder="Enter set point" step="0.01" inputmode="decimal">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="save-area">
+                <button class="btn-success" onclick="saveReading()" id="save-btn">
+                    💾 SAVE DAILY READING
+                </button>
+                <div class="note">
+                    ⚠️ Only enter present readings. Previous readings and consumption are calculated automatically.
+                </div>
+            </div>
+
+            <div id="success-message" class="feedback" aria-live="polite">
+                <div class="feedback-box success-box">
+                    <div class="feedback-icon">✓</div>
+                    <div class="feedback-title">Saved Successfully</div>
+                    <div class="feedback-text">Today's meter readings have been saved successfully.</div>
+                    <button class="feedback-close" onclick="closeFeedback('success-message')">Done</button>
+                </div>
+            </div>
+            <div id="error-message" class="feedback" aria-live="assertive">
+                <div class="feedback-box error-box">
+                    <div class="feedback-icon">!</div>
+                    <div class="feedback-title">Unable to Save</div>
+                    <div class="feedback-text" id="error-text">Please check your connection and try again.</div>
+                    <button class="feedback-close" onclick="closeFeedback('error-message')">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvi23JaAnPwi4DAbhHhSNNYJsSCbeQrGc4uWundptvogozfbTQYs1gmPA7E6U1qCR0MQ/exec';
+        
+        const alHamraMeters = [
+            { id: 1, number: '540460019977', location: 'SMDB-T5 PART-3 5TH FLOOR' },
+            { id: 2, number: '540460022045', location: 'SMDB-T5 PART-3 5TH FLOOR' },
+            { id: 3, number: '540460022017', location: 'SMDB-T5 PART-3 4TH FLOOR' },
+            { id: 4, number: '540460022019', location: 'ESMDB-T4 PART-3 4TH FLOOR' },
+            { id: 5, number: '540460022010', location: 'SMDB-T3 PART-3 3RD FLOOR' },
+            { id: 6, number: '540460022020', location: 'ESMDB-T3 PART-3 3RD FLOOR' },
+            { id: 7, number: '540460022044', location: 'ESMDB-SE PART-3 2ND FLOOR' },
+            { id: 8, number: '540460022040', location: 'ESMDB-SE PART-3 2ND FLOOR' },
+            { id: 9, number: '540460022018', location: 'RECEIVING AREA SEWAGE PUMPS' }
+        ];
+
+        function initializeAlHamraMeters() {
+            const container = document.getElementById('al-hamra-meters');
+            alHamraMeters.forEach(meter => {
+                const card = document.createElement('div');
+                card.className = 'meter-card';
+                card.innerHTML = `
+                    <label>AL HAMRA METER ${meter.id}</label>
+                    <small>${meter.number} - ${meter.location}</small>
+                    <input type="number" id="alhamra-${meter.id}" placeholder="Enter reading" step="0.01" inputmode="decimal">
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function switchTab(tabName, clickedCard) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.utility-card').forEach(card => card.classList.remove('active'));
+
+            const target = document.getElementById(tabName + '-tab');
+            if (target) target.classList.add('active');
+            if (clickedCard) clickedCard.classList.add('active');
+
+            if (window.innerWidth <= 760) {
+                const contentTop = document.querySelector('.content');
+                if (contentTop) {
+                    window.scrollTo({ top: Math.max(0, contentTop.offsetTop - 8), behavior: 'smooth' });
+                }
+            }
+        }
+
+        function setCurrentDate() {
+            const now = new Date();
+            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', options);
+        }
+
+        function collectReadings() {
+            return {
+                date: new Date().toISOString().split('T')[0],
+                electrical: {
+                    mainIncomer: { present: document.getElementById('main-incomer').value || '' },
+                    fewaMain: { present: document.getElementById('fewa-main').value || '' },
+                    alHamra: alHamraMeters.map(meter => ({
+                        id: meter.id,
+                        number: meter.number,
+                        present: document.getElementById(`alhamra-${meter.id}`).value || ''
+                    }))
+                },
+                water: {
+                    utico: { present: document.getElementById('utico-water').value || '' },
+                    occupancy: { actual: document.getElementById('occupancy-actual').value || '' }
+                },
+                coolingTower: {
+                    meter: { present: document.getElementById('cooling-tower').value || '' },
+                    chillerSetPoint: document.getElementById('chiller-setpoint-cooling').value || '',
+                    bondConstruction: { present: document.getElementById('bond-construction').value || '' }
+                },
+                pools: {
+                    main: { present: document.getElementById('main-pool').value || '' },
+                    splash: { present: document.getElementById('splash-pool').value || '' },
+                    sunset: { present: document.getElementById('sunset-pool').value || '' }
+                },
+                irrigation: {
+                    main: { present: document.getElementById('main-irrigation').value || '' },
+                    boardwalk: { present: document.getElementById('boardwalk-irrigation').value || '' },
+                    residence: { present: document.getElementById('residence').value || '' }
+                },
+                lpg: {
+                    boiler: { present: document.getElementById('boiler').value || '' },
+                    kitchen: { present: document.getElementById('kitchen').value || '' },
+                    tank1Gauge: document.getElementById('tank1-gauge').value || '',
+                    tank2Gauge: document.getElementById('tank2-gauge').value || '',
+                    deliveryReceived: document.getElementById('delivery-received').value || '',
+                    clarifierSetPoint: document.getElementById('clarifier-setpoint').value || ''
+                }
+            };
+        }
+
+        function showSuccess() {
+            const successEl = document.getElementById('success-message');
+            successEl.classList.add('show');
+            clearTimeout(window.successTimer);
+            window.successTimer = setTimeout(() => closeFeedback('success-message'), 2800);
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error-message');
+            const errorText = document.getElementById('error-text');
+            errorText.textContent = message || 'Error saving reading. Please check your connection and try again.';
+            errorEl.classList.add('show');
+        }
+
+        function closeFeedback(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('show');
+        }
+
+        document.querySelectorAll('.feedback').forEach(el => {
+            el.addEventListener('click', function(e) {
+                if (e.target === el) closeFeedback(el.id);
+            });
+        });
+
+        async function saveReading() {
+            const readings = collectReadings();
+            
+            let hasData = false;
+            if (readings.electrical.mainIncomer.present || 
+                readings.electrical.fewaMain.present ||
+                readings.electrical.alHamra.some(m => m.present) ||
+                readings.water.utico.present ||
+                readings.coolingTower.meter.present ||
+                readings.pools.main.present ||
+                readings.irrigation.main.present ||
+                readings.lpg.boiler.present ||
+                readings.lpg.kitchen.present) {
+                hasData = true;
+            }
+            
+            if (!hasData) {
+                showError('Please enter at least one meter reading before saving.');
+                return;
+            }
+            
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '⏳ SAVING...';
+            
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(readings)
+                });
+                
+                showSuccess();
+                
+                setTimeout(() => {
+                    clearAllFields();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error saving:', error);
+                showError('Error saving reading. Please check your connection and try again.');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '💾 SAVE DAILY READING';
+            }
+        }
+
+        function clearAllFields() {
+            document.querySelectorAll('input[type="number"], input[type="text"]').forEach(input => {
+                input.value = '';
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setCurrentDate();
+            initializeAlHamraMeters();
+        });
+    </script>
+</body>
+</html>
