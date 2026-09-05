@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WA RAK - Daily Meter Readings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px;
+            text-align: center;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .tab.active {
+            background: #1e3c72;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .meter-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .meter-section h3 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+            font-size: 16px;
+            border-bottom: 2px solid #1e3c72;
+            padding-bottom: 5px;
+        }
+
+        .meter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        .meter-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .meter-card label {
+            display: block;
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .meter-card input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .meter-card input:focus {
+            outline: none;
+            border-color: #1e3c72;
+            box-shadow: 0 0 0 2px rgba(30, 60, 114, 0.1);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: #1e3c72;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: inline-block;
+            margin: 5px;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: #2a5298;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-success {
+            background: #28a745;
+            font-size: 18px;
+            padding: 15px 30px;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .success-message {
+            background: #28a745;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 10px 0;
+            display: none;
+            font-weight: bold;
+        }
+
+        .error-message {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 10px 0;
+            display: none;
+            font-weight: bold;
+        }
+
+        .note {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #856404;
+        }
+
+        @media (max-width: 600px) {
+            .meter-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 WA RAK - Daily Meter Readings</h1>
+            <p id="current-date"></p>
+        </div>
+        
+        <div class="content">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('electrical')">⚡ Electrical</button>
+                <button class="tab" onclick="switchTab('water')">💧 Water</button>
+                <button class="tab" onclick="switchTab('cooling')">❄️ Cooling Tower</button>
+                <button class="tab" onclick="switchTab('pools')">🏊 Pools</button>
+                <button class="tab" onclick="switchTab('irrigation')">🌱 Irrigation</button>
+                <button class="tab" onclick="switchTab('lpg')">🔥 LPG</button>
+            </div>
+
+            <!-- Electrical Meters Tab -->
+            <div id="electrical-tab" class="tab-content active">
+                <div class="meter-section">
+                    <h3>⚡ Electrical Meters</h3>
+                    <div class="meter-grid">
+                        <div class="meter-card">
+                            <label>MAIN INCOMER (MV ROOM)</label>
+                            <input type="number" id="main-incomer" placeholder="Enter present reading" step="0.01">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>FEWA MAIN METER (MV ROOM)</label>
+                            <input type="number" id="fewa-main" placeholder="Enter present reading" step="0.01">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="meter-section">
+                    <h3>🏢 AL HAMRA METERS</h3>
+                    <div class="meter-grid" id="al-hamra-meters">
+                        <!-- Dynamically generated -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Water Meters Tab -->
+            <div id="water-tab" class="tab-content">
+                <div class="meter-section">
+                    <h3>💧 Water Meters</h3>
+                    <div class="meter-grid">
+                        <div class="meter-card">
+                            <label>MAIN UTICO WATER METER</label>
+                            <input type="number" id="utico-water" placeholder="Enter present reading" step="0.01">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>DAILY OCCUPANCY ACTUAL %</label>
+                            <input type="number" id="occupancy-actual" placeholder="Enter actual %" step="0.01">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cooling Tower Tab -->
+            <div id="cooling-tab" class="tab-content">
+                <div class="meter-section">
+                    <h3>❄️ Cooling Tower Meters</h3>
+                    <div class="meter-grid">
+                        <div class="meter-card">
+                            <label>COOLING TOWER WATER METER</label>
+                            <input type="number" id="cooling-tower" placeholder="Enter present reading" step="0.01">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>CHILLER SET POINT (°C)</label>
+                            <input type="text" id="chiller-setpoint-cooling" placeholder="e.g., 9°D&9°N">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>BOND CONSTRUCTION - WATER METER</label>
+                            <input type="number" id="bond-construction" placeholder="Enter present reading" step="0.01">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pools Tab -->
+            <div id="pools-tab" class="tab-content">
+                <div class="meter-section">
+                    <h3>🏊 Pools Make Up Water Meters</h3>
+                    <div class="meter-grid">
+                        <div class="meter-card">
+                            <label>MAIN POOL</label>
+                            <input type="number" id="main-pool" placeholder="Enter present reading" step="0.01">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>SPLASH POOL</label>
+                            <input type="number" id="splash-pool" placeholder="Enter present reading" step="0.01">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>SUNSET POOL</label>
+                            <input type="number" id="sunset-pool" placeholder="Enter present reading" step="0.01">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Irrigation Tab -->
+            <div id="irrigation-tab" class="tab-content">
+                <div class="meter-section">
+                    <h3>🌱 Irrigation Meters</h3>
+                    <div class="meter-grid">
+                        <div class="meter-card">
+                            <label>MAIN IRRIGATION METER</label>
+                            <input type="number" id="main-irrigation" placeholder="Enter present reading" step="0.01">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>BOARDWALK IRRIGATION METER</label>
+                            <input type="number" id="boardwalk-irrigation" placeholder="Enter present reading" step="0.01">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>AL HAMRA RESIDENCE</label>
+                            <input type="number" id="residence" placeholder="Enter present reading" step="0.01">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LPG Tab -->
+            <div id="lpg-tab" class="tab-content">
+                <div class="meter-section">
+                    <h3>🔥 LPG Meters</h3>
+                    <div class="meter-grid">
+                        <div class="meter-card">
+                            <label>BOILER (M3)</label>
+                            <input type="number" id="boiler" placeholder="Enter present reading" step="0.01">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>KITCHEN (M3)</label>
+                            <input type="number" id="kitchen" placeholder="Enter present reading" step="0.01">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>TANK GAUGE % (Tank 1)</label>
+                            <input type="number" id="tank1-gauge" placeholder="Enter %" step="0.1">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>TANK GAUGE % (Tank 2)</label>
+                            <input type="number" id="tank2-gauge" placeholder="Enter %" step="0.1">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>DELIVERY RECEIVED (Liters)</label>
+                            <input type="number" id="delivery-received" placeholder="Enter liters" step="0.01">
+                        </div>
+                        
+                        <div class="meter-card">
+                            <label>CLARIFIER SET POINT (°C)</label>
+                            <input type="number" id="clarifier-setpoint" placeholder="Enter set point" step="0.01">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Button -->
+            <div style="text-align: center; margin-top: 30px; padding: 20px;">
+                <button class="btn btn-success" onclick="saveReading()">
+                    💾 SAVE DAILY READING
+                </button>
+                <div class="note">
+                    ⚠️ Only enter present readings. Previous readings and consumption will be calculated automatically from the last saved data.
+                </div>
+            </div>
+
+            <div id="success-message" class="success-message">✅ Reading saved successfully!</div>
+            <div id="error-message" class="error-message">❌ Error saving reading. Please try again.</div>
+        </div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvi23JaAnPwi4DAbhHhSNNYJsSCbeQrGc4uWundptvogozfbTQYs1gmPA7E6U1qCR0MQ/exec';
+        
+        const alHamraMeters = [
+            { id: 1, number: '540460019977', location: 'SMDB-T5 PART-3 5TH FLOOR' },
+            { id: 2, number: '540460022045', location: 'SMDB-T5 PART-3 5TH FLOOR' },
+            { id: 3, number: '540460022017', location: 'SMDB-T5 PART-3 4TH FLOOR' },
+            { id: 4, number: '540460022019', location: 'ESMDB-T4 PART-3 4TH FLOOR' },
+            { id: 5, number: '540460022010', location: 'SMDB-T3 PART-3 3RD FLOOR' },
+            { id: 6, number: '540460022020', location: 'ESMDB-T3 PART-3 3RD FLOOR' },
+            { id: 7, number: '540460022044', location: 'ESMDB-SE PART-3 2ND FLOOR' },
+            { id: 8, number: '540460022040', location: 'ESMDB-SE PART-3 2ND FLOOR' },
+            { id: 9, number: '540460022018', location: 'RECEIVING AREA SEWAGE PUMPS' }
+        ];
+
+        function initializeAlHamraMeters() {
+            const container = document.getElementById('al-hamra-meters');
+            alHamraMeters.forEach(meter => {
+                const card = document.createElement('div');
+                card.className = 'meter-card';
+                card.innerHTML = `
+                    <label>METER ${meter.id} - ${meter.number}</label>
+                    <small style="display: block; margin-bottom: 5px; color: #6c757d;">${meter.location}</small>
+                    <input type="number" id="alhamra-${meter.id}" placeholder="Enter present reading" step="0.01">
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function setCurrentDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', options);
+        }
+
+        function collectReadings() {
+            const readings = {
+                date: new Date().toISOString().split('T')[0],
+                electrical: {
+                    mainIncomer: {
+                        present: document.getElementById('main-incomer').value || ''
+                    },
+                    fewaMain: {
+                        present: document.getElementById('fewa-main').value || ''
+                    },
+                    alHamra: alHamraMeters.map(meter => ({
+                        id: meter.id,
+                        number: meter.number,
+                        present: document.getElementById(`alhamra-${meter.id}`).value || ''
+                    }))
+                },
+                water: {
+                    utico: {
+                        present: document.getElementById('utico-water').value || ''
+                    },
+                    occupancy: {
+                        actual: document.getElementById('occupancy-actual').value || ''
+                    }
+                },
+                coolingTower: {
+                    meter: {
+                        present: document.getElementById('cooling-tower').value || ''
+                    },
+                    chillerSetPoint: document.getElementById('chiller-setpoint-cooling').value || '',
+                    bondConstruction: {
+                        present: document.getElementById('bond-construction').value || ''
+                    }
+                },
+                pools: {
+                    main: {
+                        present: document.getElementById('main-pool').value || ''
+                    },
+                    splash: {
+                        present: document.getElementById('splash-pool').value || ''
+                    },
+                    sunset: {
+                        present: document.getElementById('sunset-pool').value || ''
+                    }
+                },
+                irrigation: {
+                    main: {
+                        present: document.getElementById('main-irrigation').value || ''
+                    },
+                    boardwalk: {
+                        present: document.getElementById('boardwalk-irrigation').value || ''
+                    },
+                    residence: {
+                        present: document.getElementById('residence').value || ''
+                    }
+                },
+                lpg: {
+                    boiler: {
+                        present: document.getElementById('boiler').value || ''
+                    },
+                    kitchen: {
+                        present: document.getElementById('kitchen').value || ''
+                    },
+                    tank1Gauge: document.getElementById('tank1-gauge').value || '',
+                    tank2Gauge: document.getElementById('tank2-gauge').value || '',
+                    deliveryReceived: document.getElementById('delivery-received').value || '',
+                    clarifierSetPoint: document.getElementById('clarifier-setpoint').value || ''
+                }
+            };
+            
+            return readings;
+        }
+
+        async function saveReading() {
+            const readings = collectReadings();
+            
+            let hasData = false;
+            if (readings.electrical.mainIncomer.present || 
+                readings.electrical.fewaMain.present ||
+                readings.electrical.alHamra.some(m => m.present) ||
+                readings.water.utico.present ||
+                readings.coolingTower.meter.present ||
+                readings.pools.main.present ||
+                readings.irrigation.main.present ||
+                readings.lpg.boiler.present ||
+                readings.lpg.kitchen.present) {
+                hasData = true;
+            }
+            
+            if (!hasData) {
+                showError('Please enter at least one meter reading before saving.');
+                return;
+            }
+            
+            const saveBtn = document.querySelector('.btn-success');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '⏳ SAVING...';
+            saveBtn.disabled = true;
+            
+            try {
+                console.log('Sending data:', readings);
+                
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(readings)
+                });
+                
+                console.log('Response:', response);
+                
+                showSuccess();
+                
+                setTimeout(() => {
+                    clearAllFields();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error saving:', error);
+                showError('Error saving reading. Please check your connection and try again.');
+            } finally {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            }
+        }
+
+        function clearAllFields() {
+            document.querySelectorAll('input[type="number"], input[type="text"]').forEach(input => {
+                input.value = '';
+            });
+        }
+
+        function showSuccess() {
+            const successEl = document.getElementById('success-message');
+            successEl.style.display = 'block';
+            setTimeout(() => {
+                successEl.style.display = 'none';
+            }, 3000);
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error-message');
+            errorEl.textContent = '❌ ' + (message || 'Error saving reading. Please try again.');
+            errorEl.style.display = 'block';
+            setTimeout(() => {
+                errorEl.style.display = 'none';
+            }, 4000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setCurrentDate();
+            initializeAlHamraMeters();
+        });
+    </script>
+</body>
+</html>
