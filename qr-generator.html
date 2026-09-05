@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WA RAK - QR Code Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        input, select, button {
+            padding: 12px;
+            margin: 10px 0;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #1e3c72;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #2a5298;
+        }
+        #qrcode {
+            margin: 20px 0;
+            text-align: center;
+        }
+        #download-btn {
+            background: #28a745;
+        }
+        #download-btn:hover {
+            background: #218838;
+        }
+        .batch-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+        .batch-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 WA RAK - Meter Location QR Code Generator</h1>
+        
+        <label>Meter Type</label>
+        <select id="meter-type">
+            <option value="electrical">Electrical Meter</option>
+            <option value="water">Water Meter</option>
+            <option value="cooling">Cooling Tower Meter</option>
+            <option value="pools">Pool Meter</option>
+            <option value="irrigation">Irrigation Meter</option>
+            <option value="lpg">LPG Meter</option>
+        </select>
+        
+        <label>Location Name</label>
+        <input type="text" id="location-name" placeholder="e.g., AL HAMRA METER 1 - 5TH FLOOR">
+        
+        <label>Meter Number</label>
+        <input type="text" id="meter-no" placeholder="e.g., 540460019977">
+        
+        <button onclick="generateQR()">Generate Single QR Code</button>
+        
+        <div id="qrcode"></div>
+        
+        <button id="download-btn" onclick="downloadQR()" style="display: none;">⬇️ Download QR Code</button>
+        
+        <div class="batch-section">
+            <h2>📦 Batch Generation for AL HAMRA Meters</h2>
+            <button onclick="generateBatchQR()">Generate All AL HAMRA Meter QR Codes</button>
+            <div id="batch-qrcodes"></div>
+        </div>
+    </div>
+    
+    <script>
+        let qrCode = null;
+        
+        function generateQR() {
+            const location = document.getElementById('location-name').value;
+            const meterNo = document.getElementById('meter-no').value;
+            const meterType = document.getElementById('meter-type').value;
+            
+            if (!location) {
+                alert('Please fill in Location Name');
+                return;
+            }
+            
+            const qrData = JSON.stringify({
+                location: location,
+                meterNumber: meterNo,
+                meterType: meterType,
+                facility: 'WA RAK'
+            });
+            
+            document.getElementById('qrcode').innerHTML = '';
+            qrCode = new QRCode(document.getElementById('qrcode'), {
+                text: qrData,
+                width: 256,
+                height: 256,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            document.getElementById('download-btn').style.display = 'block';
+        }
+        
+        function generateBatchQR() {
+            const alHamraMeters = [
+                { id: 1, number: '540460019977', location: 'SMDB-T5 PART-3 5TH FLOOR' },
+                { id: 2, number: '540460022045', location: 'SMDB-T5 PART-3 5TH FLOOR' },
+                { id: 3, number: '540460022017', location: 'SMDB-T5 PART-3 4TH FLOOR' },
+                { id: 4, number: '540460022019', location: 'ESMDB-T4 PART-3 4TH FLOOR' },
+                { id: 5, number: '540460022010', location: 'SMDB-T3 PART-3 3RD FLOOR' },
+                { id: 6, number: '540460022020', location: 'ESMDB-T3 PART-3 3RD FLOOR' },
+                { id: 7, number: '540460022044', location: 'ESMDB-SE PART-3 2ND FLOOR' },
+                { id: 8, number: '540460022040', location: 'ESMDB-SE PART-3 2ND FLOOR' },
+                { id: 9, number: '540460022018', location: 'RECEIVING AREA SEWAGE PUMPS' }
+            ];
+            
+            const batchContainer = document.getElementById('batch-qrcodes');
+            batchContainer.innerHTML = '<h3>AL HAMRA Meters QR Codes:</h3>';
+            
+            alHamraMeters.forEach(meter => {
+                const qrData = JSON.stringify({
+                    location: `AL HAMRA METER ${meter.id} - ${meter.location}`,
+                    meterNumber: meter.number,
+                    meterType: 'electrical',
+                    facility: 'WA RAK'
+                });
+                
+                const qrDiv = document.createElement('div');
+                qrDiv.className = 'batch-item';
+                qrDiv.innerHTML = `
+                    <div style="flex: 1;">
+                        <strong>Meter ${meter.id}:</strong> ${meter.number}<br>
+                        <small>${meter.location}</small>
+                    </div>
+                    <div id="qr-${meter.id}"></div>
+                    <button onclick="downloadBatchQR(${meter.id}, 'Meter_${meter.id}_${meter.number}')">Download</button>
+                `;
+                batchContainer.appendChild(qrDiv);
+                
+                new QRCode(document.getElementById(`qr-${meter.id}`), {
+                    text: qrData,
+                    width: 100,
+                    height: 100,
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            });
+        }
+        
+        function downloadQR() {
+            const canvas = document.querySelector('#qrcode canvas');
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = `QR_${document.getElementById('location-name').value}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }
+        }
+        
+        function downloadBatchQR(id, filename) {
+            const canvas = document.querySelector(`#qr-${id} canvas`);
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = `${filename}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }
+        }
+    </script>
+</body>
+</html>
